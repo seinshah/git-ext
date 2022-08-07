@@ -32,6 +32,7 @@ var (
 	requestedBranches []string
 	allBranches       bool
 	stashChanges      bool
+	disableOutput     bool
 )
 
 func newRootCmd() *cobra.Command {
@@ -55,9 +56,11 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 
-			spinner.Success("Found %d repositories", len(repositories))
+			if !disableOutput {
+				spinner.Success("Found %d repositories", len(repositories))
+			}
 
-			if len(repositories) > warnThreshold {
+			if !disableOutput && len(repositories) > warnThreshold {
 				ok, err := pterm.DefaultInteractiveConfirm.
 					WithDefaultText(fmt.Sprintf("Are you sure you want to update %d repositories?", len(repositories))).
 					Show()
@@ -90,6 +93,10 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVarP(
 		&stashChanges, "stash-changes", "s", false,
 		"when a branch is dirty, if this is true, changes will be stashed and then updated. default is false")
+
+	cmd.PersistentFlags().BoolVarP(
+		&disableOutput, "disable-output", "d", false,
+		"if true, output will be disabled. default is false")
 
 	return cmd
 }
@@ -152,22 +159,29 @@ func findRepositories(rootDir string) ([]string, error) {
 }
 
 func updateRepository(repository string) error {
-	viz, err := pterm.DefaultSpinner.Start(repository)
-	if err != nil {
-		return err
+	var viz *pterm.SpinnerPrinter
+	var err error
+
+	if !disableOutput {
+		viz, err = pterm.DefaultSpinner.Start(repository)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = stashIfDirty(repository); err != nil {
-		if errors.Is(err, errStashNotAllowed) {
-			viz.InfoPrinter = &pterm.PrefixPrinter{
-				Prefix: pterm.Prefix{
-					Style: &pterm.Style{pterm.FgBlack, pterm.BgLightBlue},
-					Text:  "SKIPPED",
-				},
+		if !disableOutput {
+			if errors.Is(err, errStashNotAllowed) {
+				viz.InfoPrinter = &pterm.PrefixPrinter{
+					Prefix: pterm.Prefix{
+						Style: &pterm.Style{pterm.FgBlack, pterm.BgLightBlue},
+						Text:  "SKIPPED",
+					},
+				}
+				viz.Info()
+			} else {
+				viz.Fail()
 			}
-			viz.Info()
-		} else {
-			viz.Fail()
 		}
 
 		return err
@@ -175,16 +189,18 @@ func updateRepository(repository string) error {
 
 	activeBranches, err := fetchBranchesToUpdate(repository)
 	if err != nil {
-		if errors.Is(err, errNoBranch) {
-			viz.InfoPrinter = &pterm.PrefixPrinter{
-				Prefix: pterm.Prefix{
-					Style: &pterm.Style{pterm.FgYellow, pterm.BgDarkGray},
-					Text:  " NO-BRANCH ",
-				},
+		if !disableOutput {
+			if errors.Is(err, errNoBranch) {
+				viz.InfoPrinter = &pterm.PrefixPrinter{
+					Prefix: pterm.Prefix{
+						Style: &pterm.Style{pterm.FgYellow, pterm.BgDarkGray},
+						Text:  "NO-CHNG",
+					},
+				}
+				viz.Info()
+			} else {
+				viz.Fail()
 			}
-			viz.Info()
-		} else {
-			viz.Fail()
 		}
 
 		return err
@@ -193,20 +209,24 @@ func updateRepository(repository string) error {
 	var failedUpdates []string
 
 	for _, branch := range activeBranches {
-		viz.UpdateText(fmt.Sprintf("(%s): %s", branch, repository))
+		if !disableOutput {
+			viz.UpdateText(fmt.Sprintf("(%s): %s", branch, repository))
+		}
 
 		if err := updateBranch(repository, branch); err != nil {
 			failedUpdates = append(failedUpdates, branch)
 		}
 	}
 
-	if len(failedUpdates) == len(activeBranches) {
-		viz.Fail()
-	} else if len(failedUpdates) > 0 {
-		viz.Warning(fmt.Sprintf("%s: [%d/%d] (%s)", repository, len(activeBranches)-len(failedUpdates),
-			len(activeBranches), strings.Join(failedUpdates, ", ")))
-	} else {
-		viz.Success(fmt.Sprintf("%s: [%d/%d]", repository, len(activeBranches), len(activeBranches)))
+	if !disableOutput {
+		if len(failedUpdates) == len(activeBranches) {
+			viz.Fail()
+		} else if len(failedUpdates) > 0 {
+			viz.Warning(fmt.Sprintf("%s: [%d/%d] (%s)", repository, len(activeBranches)-len(failedUpdates),
+				len(activeBranches), strings.Join(failedUpdates, ", ")))
+		} else {
+			viz.Success(fmt.Sprintf("%s: [%d/%d]", repository, len(activeBranches), len(activeBranches)))
+		}
 	}
 
 	return nil
@@ -229,7 +249,7 @@ func stashIfDirty(repo string) error {
 		return errStashNotAllowed
 	}
 
-	stashCmd := exec.Command("git", "stash")
+	stashCmd := exec.Command("git", "stash", "push", "-u", "-m", "dirupdate")
 	stashCmd.Dir = repo
 
 	return stashCmd.Run()

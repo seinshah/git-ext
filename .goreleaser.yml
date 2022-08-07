@@ -15,6 +15,14 @@ builds:
     goos:
       - linux
       - darwin
+  - main: ./git-dirupdate
+    id: "git-dirupdate"
+    binary: git-dirupdate
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
 archives:
   - replacements:
       darwin: Darwin
