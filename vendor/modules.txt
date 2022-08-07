@@ -1,5 +1,25 @@
+# atomicgo.dev/cursor v0.1.1
+atomicgo.dev/cursor
+# atomicgo.dev/keyboard v0.2.8
+atomicgo.dev/keyboard
+atomicgo.dev/keyboard/internal
+atomicgo.dev/keyboard/keys
+# github.com/containerd/console v1.0.3
+github.com/containerd/console
+# github.com/gookit/color v1.5.0
+github.com/gookit/color
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/lithammer/fuzzysearch v1.1.5
+github.com/lithammer/fuzzysearch/fuzzy
+# github.com/mattn/go-runewidth v0.0.13
+github.com/mattn/go-runewidth
+# github.com/pterm/pterm v0.12.45
+## explicit
+github.com/pterm/pterm
+github.com/pterm/pterm/internal
+# github.com/rivo/uniseg v0.2.0
+github.com/rivo/uniseg
 # github.com/spf13/cobra v1.2.1
 ## explicit
 github.com/spf13/cobra
@@ -8,3 +28,16 @@ github.com/spf13/pflag
 # github.com/whilp/git-urls v1.0.0
 ## explicit
 github.com/whilp/git-urls
+# github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778
+github.com/xo/terminfo
+# golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+golang.org/x/term
+# golang.org/x/text v0.3.7
+golang.org/x/text/runes
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
